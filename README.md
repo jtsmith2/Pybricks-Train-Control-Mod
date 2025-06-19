@@ -1,8 +1,11 @@
 # Pybricks-Train-Control-Mod
 An updated pythonized version of the train control script created by Lok24 and modified by and-ampersand-and
-[Original Script by and-ampersand-and](https://github.com/and-ampersand-and/PyBricks-Train-Motor-Control-Script/tree/main)
+
 [Original Thread on Eurobricks](https://www.eurobricks.com/forum/forums/topic/187081-control-your-trains-without-smart-device-with-pybricks/)
+
 [and-ampersand-and Thread on Eurobricks moding the original script by Lok24](https://www.eurobricks.com/forum/forums/topic/197633-controlling-multiple-locomotives-on-the-same-train-with-pybricks/)
+
+[Script by and-ampersand-and on Github](https://github.com/and-ampersand-and/PyBricks-Train-Motor-Control-Script/tree/main)
 
 # LEGO Motor Control System
 
