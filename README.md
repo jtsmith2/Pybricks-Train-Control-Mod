@@ -7,6 +7,15 @@ An updated pythonized version of the train control script created by Lok24 and m
 
 [Script by and-ampersand-and on Github](https://github.com/and-ampersand-and/PyBricks-Train-Motor-Control-Script/tree/main)
 
+## Updates made from original script
+- Refactored into modern python coding standards with an object-oriented design
+- Added ability to customize the remote LED based on the speed of the train.
+  - Based upon a comment made on the original Lok24 Eurobrick thread [link to comment](https://www.eurobricks.com/forum/forums/topic/187081-control-your-trains-without-smart-device-with-pybricks/?do=findComment&comment=3477742)
+- When stopped, remote LED blinks between stopped color (see point above) and color indicating which profile is active
+
+## Todos
+- Allow for more that 2 speed profiles and let user cycle through them
+
 # LEGO Motor Control System
 
 A modern Python-based control system for LEGO trains and motors using Pybricks. This system provides remote control of multiple LEGO hubs with advanced features like speed profiles, LED feedback, and wireless coordination between hubs.
