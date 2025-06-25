@@ -14,7 +14,7 @@ An updated pythonized version of the train control script created by Lok24 and m
 - When stopped, remote LED blinks between stopped color (see point above) and color indicating which profile is active
 
 ## Todos
-- Allow for more that 2 speed profiles and let user cycle through them
+- Allow for more than 2 speed profiles and let user cycle through them
 
 # LEGO Motor Control System
 
@@ -28,7 +28,7 @@ A modern Python-based control system for LEGO trains and motors using Pybricks. 
 - **Multi-Hub Support**: Wireless control of multiple observer hubs from one primary hub
 - **Auto-Detection**: Automatic detection and configuration of connected motors and lights
 - **Safety Features**: Watchdog timers, connection monitoring, and graceful error handling
-- **Modern Python**: Clean, maintainable code with type hints and object-oriented design
+- **Modern Python**: Clean, maintainable code with object-oriented design
 
 ## 📋 Requirements
 
@@ -46,14 +46,14 @@ A modern Python-based control system for LEGO trains and motors using Pybricks. 
 
 ### Software
 - [Pybricks](https://code.pybricks.com/) development environment
-- Python 3.x with Pybricks libraries
+- **Note**: Code is optimized for MicroPython compatibility (no dataclasses, enums, or type hints)
 
 ## 🚀 Quick Start
 
 ### 1. Primary Hub Setup (Main Controller)
 
-1. Copy `main-hub.py` to your primary hub
-2. Connect motors or lights to Port A and/or Port B
+1. Copy `main_hub.py` to your primary hub
+2. Connect motors to Port A and/or Port B
 3. Pair your LEGO remote control
 4. Configure settings in the `Configuration` class:
 
@@ -61,7 +61,7 @@ A modern Python-based control system for LEGO trains and motors using Pybricks. 
 config = Configuration(
     # Motor profiles
     profile_a=MotorProfile(20, 100, 10, 100),  # min, max, step, delay
-    profile_b=MotorProfile(10, 100, 5, 200),
+    profile_b=MotorProfile(10, 500, 5, 200),
     
     # Enable broadcasting for observer hubs
     should_broadcast=True,
@@ -77,17 +77,23 @@ config = Configuration(
 
 ### 2. Observer Hub Setup (Secondary Hubs)
 
-1. Copy `observer-hub.py` to each observer hub
-2. Connect motors and lights to Port A and/or Port B
+1. Copy `observer_hub.py` to each observer hub
+2. Connect motors to Port A and/or Port B
 3. Configure the observer channel to match your primary hub:
 
 ```python
-config = ObserverConfiguration(
-    observe_channel=1,          # Match primary hub's broadcast_channel
-    motor_a_direction=1,        # Adjust motor directions as needed
-    motor_b_direction=-1,
-    enable_debug_output=True
-)
+config = ObserverConfiguration()
+
+# Communication settings
+config.observe_channel = 1          # Must match primary hub's broadcast_channel
+config.connection_timeout_ms = 1000 # Consider disconnected after this time
+
+# Motor directions (1 or -1)
+config.motor_a_direction = 1        # Adjust motor directions as needed
+config.motor_b_direction = -1
+
+# Debug output
+config.enable_debug_output = True   # Set to False for quieter operation
 ```
 
 4. Run the script on each observer hub
@@ -100,11 +106,11 @@ config = ObserverConfiguration(
 |--------|----------|
 | **Left +** | Increase speed (based on current profile) |
 | **Left -** | Decrease speed (based on current profile) |
-| **Left Center Red** | Emergency stop |
+| **Left** | Emergency stop |
 | **Right +** | Increase light brightness |
 | **Right -** | Decrease light brightness |
-| **Right Center Red** | Toggle lights (off/max) |
-| **Center Green** | Switch between Profile A and Profile B |
+| **Right** | Toggle lights (off/max) |
+| **Center** | Switch between Profile A and Profile B |
 
 ### LED Feedback
 
@@ -134,34 +140,34 @@ When `use_speed_based_leds=True`:
 Motor profiles define speed and acceleration characteristics:
 
 ```python
-@dataclass
+# Note: Using regular classes instead of dataclasses for MicroPython compatibility
 class MotorProfile:
-    min_speed: int           # Minimum speed when moving
-    max_speed: int           # Maximum speed
-    acceleration_step: int   # Speed increase per button press
-    acceleration_delay: int  # Delay between steps (milliseconds)
+    def __init__(self, min_speed=20, max_speed=100, acceleration_step=10, acceleration_delay=100):
+        self.min_speed = min_speed           # Minimum speed when moving
+        self.max_speed = max_speed           # Maximum speed
+        self.acceleration_step = acceleration_step   # Speed increase per button press
+        self.acceleration_delay = acceleration_delay  # Delay between steps (milliseconds)
 ```
 
 **Example Profiles**:
-- **Profile A**: `MotorProfile(20, 100, 10, 100)` - Lowest speed is 20% of max. Increases in steps of 10% quickly.
-- **Profile B**: `MotorProfile(10, 100, 5, 200)` - Lower initial speed, gradual acceleration
+- **Profile A**: `MotorProfile(20, 100, 10, 100)` - Smooth, precise control
+- **Profile B**: `MotorProfile(10, 100, 5, 200)` - Lower starting speed, more gradual acceleration
 
 ### LED Color Customization
 
 Customize LED colors for each profile:
 
 ```python
-# Speed-based colors for Profile A
-led_speed_profile_a = SpeedLEDConfig(
-    stopped=Color.WHITE * 0.2,
-    slow=Color.YELLOW * 0.5,
-    medium=Color.ORANGE * 0.5,
-    fast=Color.RED * 0.7,
-    profile_indicator=Color.GREEN * 0.6,  # Blinks with white when stopped
-    slow_threshold=30,      # Below 30% = slow color
-    medium_threshold=60,    # Below 60% = medium color
-    blink_interval_ms=500   # Blink speed when stopped
-)
+# Speed-based colors for Profile A (using regular class syntax)
+config = Configuration()
+config.led_speed_profile_a.stopped = Color.WHITE * 0.2
+config.led_speed_profile_a.slow = Color.YELLOW * 0.5
+config.led_speed_profile_a.medium = Color.ORANGE * 0.5
+config.led_speed_profile_a.fast = Color.RED * 0.7
+config.led_speed_profile_a.profile_indicator = Color.GREEN * 0.6  # Blinks with white when stopped
+config.led_speed_profile_a.slow_threshold = 30      # Below 30% = slow color
+config.led_speed_profile_a.medium_threshold = 60    # Below 60% = medium color
+config.led_speed_profile_a.blink_interval_ms = 500  # Blink speed when stopped
 ```
 
 ### Multi-Hub Communication
@@ -206,22 +212,6 @@ config = Configuration(
 )
 ```
 
-### Debug Output
-
-Control console output for troubleshooting:
-
-```python
-# Primary hub
-config = Configuration(
-    # ... other settings
-)
-
-# Observer hub
-config = ObserverConfiguration(
-    enable_debug_output=False  # Quiet operation
-)
-```
-
 ## 🏗️ System Architecture
 
 ### Primary Hub (Controller)
@@ -263,50 +253,8 @@ Data broadcast format: `(speed, light_brightness)`
 
 **LED colors wrong**:
 - Verify `use_speed_based_leds=True`
-- Check speed thresholds in `SpeedLEDConfig`
+- Check speed thresholds in LED configuration
 - Ensure remote is properly connected
-
-### Debug Mode
-
-Enable debug output to see detailed system information:
-
-```python
-config = Configuration(
-    # Primary hub automatically shows device detection
-)
-
-config = ObserverConfiguration(
-    enable_debug_output=True  # Shows connection status and data reception
-)
-```
-
-## 📁 File Structure
-
-```
-lego-motor-control/
-├── README.md
-├── main-hub.py      # Primary hub controller
-└── observer-hub.py       # Observer hub receiver
-```
-
-## 🤝 Contributing
-
-This project uses modern Python best practices:
-- Type hints for better code clarity
-- Dataclasses for configuration
-- Object-oriented design
-- Comprehensive error handling
-- Clear separation of concerns
-
-When contributing:
-1. Follow existing code style and patterns
-2. Add type hints to new functions
-3. Update documentation for new features
-4. Test with actual LEGO hardware when possible
-
-## 📜 License
-
-This project is provided as-is for educational and personal use with LEGO hardware and Pybricks.
 
 ## 🔗 Related Links
 
