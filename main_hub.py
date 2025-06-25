@@ -4,9 +4,6 @@ Uses https://code.pybricks.com/ with LEGO City hub and remote control
 Connect 1 or 2 motors of any kind to Port A and/or B
 """
 
-from dataclasses import dataclass
-from enum import Enum
-from typing import Optional, Dict, Any, List
 from pybricks.parameters import Color, Port, Stop, Button
 from pybricks.pupdevices import DCMotor, Motor, Remote, Light
 from pybricks.hubs import CityHub
@@ -15,7 +12,7 @@ from pybricks.iodevices import PUPDevice
 from uerrno import ENODEV
 
 
-class DeviceType(Enum):
+class DeviceType:
     """Supported device types"""
     MOTOR = "Motor"
     DC_MOTOR = "DCMotor"
@@ -24,7 +21,7 @@ class DeviceType(Enum):
     NOT_CONNECTED = "NotConnected"
 
 
-class ButtonAction(Enum):
+class ButtonAction:
     """Remote control button actions"""
     A_PLUS = "A+"
     A_MINUS = "A-"
@@ -35,95 +32,96 @@ class ButtonAction(Enum):
     CENTER = "CENTER"
 
 
-@dataclass
 class MotorProfile:
     """Motor speed profile configuration"""
-    min_speed: int
-    max_speed: int
-    acceleration_step: int
-    acceleration_delay: int  # in milliseconds
+    
+    def __init__(self, min_speed=20, max_speed=100, acceleration_step=10, acceleration_delay=100):
+        self.min_speed = min_speed
+        self.max_speed = max_speed
+        self.acceleration_step = acceleration_step
+        self.acceleration_delay = acceleration_delay  # in milliseconds
 
 
-@dataclass
 class SpeedLEDConfig:
     """LED color configuration based on speed"""
-    stopped: Any = Color.WHITE * 0.2
-    slow: Any = Color.YELLOW * 0.5
-    medium: Any = Color.ORANGE * 0.5
-    fast: Any = Color.RED * 0.7
-    profile_indicator: Any = None  # Color to blink with when stopped (None = use fast color)
     
-    # Speed thresholds (as percentage of max speed)
-    slow_threshold: int = 30  # Below this = slow color
-    medium_threshold: int = 60  # Below this = medium color
-    # Above medium_threshold = fast color
-    
-    # Blinking settings when stopped
-    blink_interval_ms: int = 500  # How fast to blink (milliseconds)
+    def __init__(self, stopped=None, slow=None, medium=None, fast=None, 
+                 profile_indicator=None, slow_threshold=30, medium_threshold=60, 
+                 blink_interval_ms=500):
+        self.stopped = stopped if stopped is not None else Color.WHITE * 0.2
+        self.slow = slow if slow is not None else Color.YELLOW * 0.5
+        self.medium = medium if medium is not None else Color.ORANGE * 0.5
+        self.fast = fast if fast is not None else Color.RED * 0.7
+        self.profile_indicator = profile_indicator  # Color to blink with when stopped (None = use fast color)
+        
+        # Speed thresholds (as percentage of max speed)
+        self.slow_threshold = slow_threshold  # Below this = slow color
+        self.medium_threshold = medium_threshold  # Below this = medium color
+        # Above medium_threshold = fast color
+        
+        # Blinking settings when stopped
+        self.blink_interval_ms = blink_interval_ms  # How fast to blink (milliseconds)
 
 
-@dataclass
 class Configuration:
     """System configuration"""
-    # Motor profiles
-    profile_a: MotorProfile = MotorProfile(20, 100, 10, 100)
-    profile_b: MotorProfile = MotorProfile(10, 500, 5, 200)
     
-    # Motor directions
-    motor_a_direction: int = 1
-    motor_b_direction: int = -1
-    
-    # Behavior settings
-    auto_acceleration: bool = False
-    watchdog_enabled: bool = False
-    should_broadcast: bool = False
-    
-    # Connection settings
-    remote_timeout: int = 10  # seconds
-    remote_name: str = ""
-    broadcast_channel: int = 1
-    
-    # Lighting
-    initial_light_value: int = 0
-    
-    # Button mappings
-    button_mapping: Dict[str, ButtonAction] = None
-    
-    # LED colors - connection status
-    led_connected: Any = Color.GREEN * 0.3
-    led_not_connected: Any = Color.RED * 0.5
-    
-    # Speed-based LED colors for each profile
-    led_speed_profile_a: SpeedLEDConfig = SpeedLEDConfig(
-        profile_indicator=Color.GREEN * 0.6  # Blinks green when stopped
-    )
-    led_speed_profile_b: SpeedLEDConfig = SpeedLEDConfig(
-        stopped=Color.WHITE * 0.2,
-        slow=Color.BLUE * 0.5,
-        medium=Color.MAGENTA * 0.5,
-        fast=Color.VIOLET * 0.7,
-        profile_indicator=Color.RED * 0.6,  # Blinks red when stopped
-        slow_threshold=20,
-        medium_threshold=50
-    )
-    
-    # Enable speed-based LED colors
-    use_speed_based_leds: bool = True
-    
-    # Enable profile indication when stopped
-    blink_profile_when_stopped: bool = True
-    
-    def __post_init__(self):
-        if self.button_mapping is None:
-            self.button_mapping = {
-                'UP': ButtonAction.A_PLUS,
-                'DOWN': ButtonAction.A_MINUS,
-                'STOP': ButtonAction.A_STOP,
-                'SWITCH': ButtonAction.CENTER,
-                'B_UP': ButtonAction.B_PLUS,
-                'B_DOWN': ButtonAction.B_MINUS,
-                'B_STOP': ButtonAction.B_STOP,
-            }
+    def __init__(self):
+        # Motor profiles
+        self.profile_a = MotorProfile(20, 100, 10, 100)
+        self.profile_b = MotorProfile(10, 500, 5, 200)
+        
+        # Motor directions
+        self.motor_a_direction = 1
+        self.motor_b_direction = -1
+        
+        # Behavior settings
+        self.auto_acceleration = True
+        self.watchdog_enabled = False
+        self.should_broadcast = True
+        
+        # Connection settings
+        self.remote_timeout = 10  # seconds
+        self.remote_name = ""
+        self.broadcast_channel = 1
+        
+        # Lighting
+        self.initial_light_value = 0
+        
+        # Button mappings
+        self.button_mapping = {
+            'UP': ButtonAction.A_PLUS,
+            'DOWN': ButtonAction.A_MINUS,
+            'STOP': ButtonAction.A_STOP,
+            'SWITCH': ButtonAction.CENTER,
+            'B_UP': ButtonAction.B_PLUS,
+            'B_DOWN': ButtonAction.B_MINUS,
+            'B_STOP': ButtonAction.B_STOP,
+        }
+        
+        # LED colors - connection status
+        self.led_connected = Color.GREEN * 0.3
+        self.led_not_connected = Color.RED * 0.5
+        
+        # Speed-based LED colors for each profile
+        self.led_speed_profile_a = SpeedLEDConfig(
+            profile_indicator=Color.GREEN * 0.6  # Blinks green when stopped
+        )
+        self.led_speed_profile_b = SpeedLEDConfig(
+            stopped=Color.WHITE * 0.2,
+            slow=Color.BLUE * 0.5,
+            medium=Color.MAGENTA * 0.5,
+            fast=Color.VIOLET * 0.7,
+            profile_indicator=Color.RED * 0.6,  # Blinks red when stopped
+            slow_threshold=20,
+            medium_threshold=50
+        )
+        
+        # Enable speed-based LED colors
+        self.use_speed_based_leds = True
+        
+        # Enable profile indication when stopped
+        self.blink_profile_when_stopped = True
 
 
 class Timer:
@@ -179,14 +177,14 @@ class MotorDevice:
         49: 1278, 75: 1367, 76: 1278
     }
     
-    def __init__(self, port: Port, direction: int):
+    def __init__(self, port, direction):
         self.port = port
         self.direction = direction
         self.device_type = DeviceType.NOT_CONNECTED
         self.max_speed = 1000
         self.device_object = None
         
-    def detect_and_initialize(self) -> DeviceType:
+    def detect_and_initialize(self):
         """Detect connected device and initialize it"""
         try:
             device = PUPDevice(self.port)
@@ -215,7 +213,7 @@ class MotorDevice:
             
         return self.device_type
         
-    def _initialize_servo_motor(self, device_id: int) -> None:
+    def _initialize_servo_motor(self, device_id):
         """Initialize servo motor with proper speed limits"""
         self.device_type = DeviceType.MOTOR
         self.device_object = Motor(self.port)
@@ -226,17 +224,17 @@ class MotorDevice:
         self.device_object.stop()
         self.device_object.control.limits(speed=max_speed, acceleration=10000)
         
-    def _initialize_dc_motor(self) -> None:
+    def _initialize_dc_motor(self):
         """Initialize DC motor"""
         self.device_type = DeviceType.DC_MOTOR
         self.device_object = DCMotor(self.port)
         
-    def _initialize_light(self) -> None:
+    def _initialize_light(self):
         """Initialize light device"""
         self.device_type = DeviceType.LIGHT
         self.device_object = Light(self.port)
         
-    def set_speed(self, speed: int) -> None:
+    def set_speed(self, speed):
         """Set motor speed based on device type"""
         if not self.device_object:
             return
@@ -255,7 +253,7 @@ class MotorDevice:
             else:
                 self.device_object.dc(actual_speed)
                 
-    def set_light_brightness(self, brightness: int) -> None:
+    def set_light_brightness(self, brightness):
         """Set light brightness (0-100)"""
         if self.device_type == DeviceType.LIGHT and self.device_object:
             if brightness == 0:
@@ -277,12 +275,12 @@ class RemoteController:
         ButtonAction.CENTER: Button.CENTER,
     }
     
-    def __init__(self, config: Configuration):
+    def __init__(self, config):
         self.config = config
-        self.remote: Optional[Remote] = None
+        self.remote = None
         self.connected = False
         
-    def connect(self) -> bool:
+    def connect(self):
         """Attempt to connect to remote"""
         try:
             self.remote = Remote(
@@ -295,7 +293,7 @@ class RemoteController:
             self.connected = False
             return False
             
-    def reconnect(self) -> bool:
+    def reconnect(self):
         """Attempt to reconnect to remote"""
         try:
             self.remote = Remote(timeout=1000)
@@ -305,7 +303,7 @@ class RemoteController:
             self.connected = False
             return False
             
-    def is_button_pressed(self, action: ButtonAction) -> bool:
+    def is_button_pressed(self, action):
         """Check if specific button is pressed"""
         if not self.connected or not self.remote:
             return False
@@ -318,7 +316,7 @@ class RemoteController:
             self.connected = False
             return False
             
-    def set_led(self, color) -> None:
+    def set_led(self, color):
         """Set remote LED color"""
         if self.connected and self.remote:
             self.remote.light.on(color)
@@ -327,7 +325,7 @@ class RemoteController:
 class MotorControlSystem:
     """Main motor control system"""
     
-    def __init__(self, config: Configuration):
+    def __init__(self, config):
         self.config = config
         self.hub = CityHub(broadcast_channel=config.broadcast_channel)
         self.remote_controller = RemoteController(config)
@@ -340,6 +338,8 @@ class MotorControlSystem:
         
         # Initialize timers
         self.timers = [Timer(i) for i in range(3)]
+        self.blink_timer = Timer(99)  # Special timer for LED blinking
+        self.led_blink_state = False  # Track blink state (True = profile color, False = white)
         
         # System state
         self.current_speed = 0
@@ -351,7 +351,7 @@ class MotorControlSystem:
         # Initialize system
         self._initialize_devices()
         
-    def _initialize_devices(self) -> None:
+    def _initialize_devices(self):
         """Initialize all connected devices"""
         for motor in self.motors:
             device_type = motor.detect_and_initialize()
@@ -359,17 +359,17 @@ class MotorControlSystem:
                 self.has_lights = True
                 motor.set_light_brightness(self.light_value)
                 
-    def _get_current_profile(self) -> MotorProfile:
+    def _get_current_profile(self):
         """Get current motor profile"""
         return (self.config.profile_a if self.current_profile == 1 
                 else self.config.profile_b)
                 
-    def _get_current_speed_led_config(self) -> SpeedLEDConfig:
+    def _get_current_speed_led_config(self):
         """Get current speed-based LED configuration"""
         return (self.config.led_speed_profile_a if self.current_profile == 1
                 else self.config.led_speed_profile_b)
                 
-    def _get_led_color_for_speed(self, speed: int) -> Any:
+    def _get_led_color_for_speed(self, speed):
         """Get LED color based on current speed and profile"""
         if not self.config.use_speed_based_leds:
             # Fall back to simple profile-based colors
@@ -382,7 +382,11 @@ class MotorControlSystem:
         # Calculate speed as percentage of max speed
         abs_speed = abs(speed)
         if abs_speed == 0:
-            return speed_config.stopped
+            # Handle stopped state with optional blinking
+            if self.config.blink_profile_when_stopped:
+                return self._get_stopped_led_color(speed_config)
+            else:
+                return speed_config.stopped
             
         speed_percentage = (abs_speed / profile.max_speed) * 100
         
@@ -392,8 +396,30 @@ class MotorControlSystem:
             return speed_config.medium
         else:
             return speed_config.fast
+            
+    def _get_stopped_led_color(self, speed_config):
+        """Get LED color for stopped state, handling blinking"""
+        # Check if it's time to toggle blink state
+        if self.blink_timer.check():
+            self.led_blink_state = not self.led_blink_state
+            
+        # Start timer if not active
+        if not self.blink_timer.active:
+            self.blink_timer.start(speed_config.blink_interval_ms)
+            
+        # Return appropriate color based on blink state
+        if self.led_blink_state:
+            # Show profile indicator color
+            profile_color = speed_config.profile_indicator
+            if profile_color is None:
+                # Fall back to fast color if no specific profile color set
+                profile_color = speed_config.fast
+            return profile_color
+        else:
+            # Show stopped color (usually white)
+            return speed_config.stopped
                 
-    def _update_motor_speeds(self) -> None:
+    def _update_motor_speeds(self):
         """Update all motor speeds and remote LED"""
         if self.current_speed != self.previous_speed:
             for motor in self.motors:
@@ -408,7 +434,7 @@ class MotorControlSystem:
             if self.config.should_broadcast:
                 self._broadcast_data()
                 
-    def _handle_speed_control(self) -> None:
+    def _handle_speed_control(self):
         """Handle speed increase/decrease controls"""
         profile = self._get_current_profile()
         button_map = self.config.button_mapping
@@ -429,7 +455,7 @@ class MotorControlSystem:
             self._update_motor_speeds()
             wait(100)
             
-    def _accelerate(self, profile: MotorProfile, direction: int) -> None:
+    def _accelerate(self, profile, direction):
         """Handle acceleration in given direction"""
         for _ in range(profile.acceleration_step):
             self.current_speed += direction
@@ -466,7 +492,7 @@ class MotorControlSystem:
             while self.remote_controller.is_button_pressed(button_action):
                 wait(100)
                 
-    def _handle_light_control(self) -> None:
+    def _handle_light_control(self):
         """Handle light brightness control"""
         button_map = self.config.button_mapping
         wait_time = 0
@@ -495,10 +521,14 @@ class MotorControlSystem:
                     
             wait(wait_time)
             
-    def _handle_profile_switch(self) -> None:
+    def _handle_profile_switch(self):
         """Handle profile switching"""
         if self.remote_controller.is_button_pressed(self.config.button_mapping['SWITCH']):
             self.current_profile = 2 if self.current_profile == 1 else 1
+            
+            # Reset blink timer when switching profiles to immediately show new profile
+            self.blink_timer.reset()
+            self.led_blink_state = True  # Start with profile color
             
             # Update remote LED based on current speed and new profile
             if self.remote_controller.connected:
@@ -509,12 +539,12 @@ class MotorControlSystem:
             while self.remote_controller.is_button_pressed(self.config.button_mapping['SWITCH']):
                 wait(100)
                 
-    def _broadcast_data(self) -> None:
+    def _broadcast_data(self):
         """Broadcast current state data"""
         data = (self.current_speed, self.light_value)
         self.hub.ble.broadcast(data)
         
-    def _handle_remote_connection(self) -> None:
+    def _handle_remote_connection(self):
         """Handle remote connection status"""
         try:
             # Test connection by checking buttons
@@ -535,7 +565,7 @@ class MotorControlSystem:
             if self.remote_controller.reconnect():
                 print("Remote reconnected")
                 
-    def run(self) -> None:
+    def run(self):
         """Main system loop"""
         print(f"System: {self.hub.system.name()}")
         
@@ -554,6 +584,11 @@ class MotorControlSystem:
             if self.remote_controller.connected:
                 self._handle_profile_switch()
                 self._handle_speed_control()
+                
+                # Update LED continuously when stopped (for blinking)
+                if self.current_speed == 0 and self.config.use_speed_based_leds and self.config.blink_profile_when_stopped:
+                    led_color = self._get_led_color_for_speed(self.current_speed)
+                    self.remote_controller.set_led(led_color)
                 
                 if self.has_lights or self.config.should_broadcast:
                     self._handle_light_control()
