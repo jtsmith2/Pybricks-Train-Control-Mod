@@ -5,9 +5,7 @@ Receives commands from a primary hub via BLE broadcast
 Connect 1 or 2 motors of any kind to Port A and/or B
 """
 
-from dataclasses import dataclass
-from enum import Enum
-from typing import Optional, Dict, Any, Tuple
+# Note: Using regular classes instead of dataclasses for MicroPython compatibility
 from pybricks.parameters import Color, Port, Stop
 from pybricks.pupdevices import DCMotor, Motor, Light
 from pybricks.hubs import CityHub
@@ -16,7 +14,7 @@ from pybricks.iodevices import PUPDevice
 from uerrno import ENODEV
 
 
-class DeviceType(Enum):
+class DeviceType:
     """Supported device types"""
     MOTOR = "Motor"
     DC_MOTOR = "DCMotor"
@@ -25,30 +23,31 @@ class DeviceType(Enum):
     NOT_CONNECTED = "NotConnected"
 
 
-@dataclass
 class ObserverConfiguration:
     """Observer hub configuration"""
-    # Communication settings
-    observe_channel: int = 1
-    connection_timeout_ms: int = 1000  # Consider disconnected after this time
     
-    # Motor directions
-    motor_a_direction: int = 1
-    motor_b_direction: int = -1
-    
-    # Lighting
-    initial_light_value: int = 0
-    
-    # LED colors for connection status
-    led_receiving: Any = Color.GREEN * 0.3
-    led_not_receiving: Any = Color.YELLOW * 0.5
-    
-    # Debug output
-    enable_debug_output: bool = True
-    
-    # Data validation
-    max_speed_value: int = 1000  # Maximum expected speed value
-    max_light_value: int = 100   # Maximum light brightness
+    def __init__(self):
+        # Communication settings
+        self.observe_channel = 1
+        self.connection_timeout_ms = 1000  # Consider disconnected after this time
+        
+        # Motor directions
+        self.motor_a_direction = 1
+        self.motor_b_direction = -1
+        
+        # Lighting
+        self.initial_light_value = 0
+        
+        # LED colors for connection status
+        self.led_receiving = Color.GREEN * 0.3
+        self.led_not_receiving = Color.YELLOW * 0.5
+        
+        # Debug output
+        self.enable_debug_output = True
+        
+        # Data validation
+        self.max_speed_value = 1000  # Maximum expected speed value
+        self.max_light_value = 100   # Maximum light brightness
 
 
 class MotorDevice:
@@ -74,14 +73,14 @@ class MotorDevice:
         49: 1278, 75: 1367, 76: 1278
     }
     
-    def __init__(self, port: Port, direction: int):
+    def __init__(self, port, direction):
         self.port = port
         self.direction = direction
         self.device_type = DeviceType.NOT_CONNECTED
         self.max_speed = 1000
         self.device_object = None
         
-    def detect_and_initialize(self) -> DeviceType:
+    def detect_and_initialize(self):
         """Detect connected device and initialize it"""
         try:
             device = PUPDevice(self.port)
@@ -113,7 +112,7 @@ class MotorDevice:
             
         return self.device_type
         
-    def _initialize_servo_motor(self, device_id: int) -> None:
+    def _initialize_servo_motor(self, device_id):
         """Initialize servo motor with proper speed limits"""
         self.device_type = DeviceType.MOTOR
         self.device_object = Motor(self.port)
@@ -126,19 +125,19 @@ class MotorDevice:
         
         print(f"{self.port}: Motor initialized - max speed: {self.max_speed}")
         
-    def _initialize_dc_motor(self) -> None:
+    def _initialize_dc_motor(self):
         """Initialize DC motor"""
         self.device_type = DeviceType.DC_MOTOR
         self.device_object = DCMotor(self.port)
         print(f"{self.port}: DC Motor initialized")
         
-    def _initialize_light(self) -> None:
+    def _initialize_light(self):
         """Initialize light device"""
         self.device_type = DeviceType.LIGHT
         self.device_object = Light(self.port)
         print(f"{self.port}: Light initialized")
         
-    def set_speed(self, speed: int) -> None:
+    def set_speed(self, speed):
         """Set motor speed based on device type"""
         if not self.device_object or self.device_type in [DeviceType.NOT_CONNECTED, DeviceType.LIGHT]:
             return
@@ -159,7 +158,7 @@ class MotorDevice:
             else:
                 self.device_object.dc(actual_speed)
                 
-    def set_light_brightness(self, brightness: int) -> None:
+    def set_light_brightness(self, brightness):
         """Set light brightness (0-100)"""
         if self.device_type == DeviceType.LIGHT and self.device_object:
             if brightness == 0:
@@ -171,13 +170,13 @@ class MotorDevice:
 class BLEDataReceiver:
     """Handles BLE data reception and validation"""
     
-    def __init__(self, hub: CityHub, config: ObserverConfiguration):
+    def __init__(self, hub, config):
         self.hub = hub
         self.config = config
         self.last_received_time = StopWatch()
         self.connection_established = False
         
-    def receive_data(self) -> Optional[Tuple[int, int]]:
+    def receive_data(self):
         """Receive and validate data from BLE broadcast"""
         try:
             data = self.hub.ble.observe(self.config.observe_channel)
@@ -207,7 +206,7 @@ class BLEDataReceiver:
                 print(f"Error receiving data: {e}")
             return None
             
-    def _validate_data(self, data: Any) -> Optional[Tuple[int, int]]:
+    def _validate_data(self, data):
         """Validate received data format and values"""
         try:
             if not isinstance(data, (tuple, list)) or len(data) != 2:
@@ -241,7 +240,7 @@ class BLEDataReceiver:
                 print(f"Data validation error: {e}")
             return None
             
-    def is_connected(self) -> bool:
+    def is_connected(self):
         """Check if we're currently receiving data"""
         return (self.connection_established and 
                 self.last_received_time.time() < self.config.connection_timeout_ms)
@@ -250,7 +249,7 @@ class BLEDataReceiver:
 class ObserverHub:
     """Main observer hub system"""
     
-    def __init__(self, config: ObserverConfiguration):
+    def __init__(self, config):
         self.config = config
         self.hub = CityHub(observe_channels=[config.observe_channel])
         self.data_receiver = BLEDataReceiver(self.hub, config)
@@ -270,7 +269,7 @@ class ObserverHub:
         # Initialize system
         self._initialize_devices()
         
-    def _initialize_devices(self) -> None:
+    def _initialize_devices(self):
         """Initialize all connected devices"""
         print("Initializing observer hub devices...")
         
@@ -282,7 +281,7 @@ class ObserverHub:
                 
         print(f"Initialization complete. Lights available: {self.has_lights}")
         
-    def _update_motor_speeds(self, speed: int) -> None:
+    def _update_motor_speeds(self, speed):
         """Update all motor speeds"""
         if speed != self.previous_speed:
             for motor in self.motors:
@@ -292,7 +291,7 @@ class ObserverHub:
             if self.config.enable_debug_output and speed != 0:
                 print(f"Speed updated to: {speed}")
                 
-    def _update_lights(self, light_value: int) -> None:
+    def _update_lights(self, light_value):
         """Update all light devices"""
         if light_value != self.current_light_value and self.has_lights:
             for motor in self.motors:
@@ -302,14 +301,14 @@ class ObserverHub:
             if self.config.enable_debug_output:
                 print(f"Light value updated to: {light_value}")
                 
-    def _update_connection_status(self, connected: bool) -> None:
+    def _update_connection_status(self, connected):
         """Update hub LED based on connection status"""
         if connected:
             self.hub.light.on(self.config.led_receiving)
         else:
             self.hub.light.on(self.config.led_not_receiving)
             
-    def run(self) -> None:
+    def run(self):
         """Main observer loop"""
         print(f"Observer Hub: {self.hub.system.name()}")
         print(f"Observing channel: {self.config.observe_channel}")
@@ -353,25 +352,25 @@ def main():
     # Configure your observer hub settings here
     # -----------------------------------------------
     
-    config = ObserverConfiguration(
-        # Communication settings
-        observe_channel=1,          # Must match primary hub broadcast channel (0-255)
-        connection_timeout_ms=1000, # Consider disconnected after this time
-        
-        # Motor directions (1 or -1)
-        motor_a_direction=1,        # Port A motor direction
-        motor_b_direction=-1,       # Port B motor direction
-        
-        # Lighting
-        initial_light_value=0,      # Initial light brightness (0-100)
-        
-        # LED colors for connection status
-        led_receiving=Color.GREEN * 0.3,     # Connected to primary hub
-        led_not_receiving=Color.YELLOW * 0.5, # Not receiving data
-        
-        # Debug output
-        enable_debug_output=True    # Set to False for quieter operation
-    )
+    config = ObserverConfiguration()
+    
+    # Communication settings
+    config.observe_channel = 1          # Must match primary hub broadcast channel (0-255)
+    config.connection_timeout_ms = 1000 # Consider disconnected after this time
+    
+    # Motor directions (1 or -1)
+    config.motor_a_direction = 1        # Port A motor direction
+    config.motor_b_direction = -1       # Port B motor direction
+    
+    # Lighting
+    config.initial_light_value = 0      # Initial light brightness (0-100)
+    
+    # LED colors for connection status
+    config.led_receiving = Color.GREEN * 0.3     # Connected to primary hub
+    config.led_not_receiving = Color.YELLOW * 0.5 # Not receiving data
+    
+    # Debug output
+    config.enable_debug_output = True    # Set to False for quieter operation
     
     # Create and run the observer hub
     print("Starting LEGO Observer Hub...")
